@@ -40,6 +40,29 @@ project.afterEvaluate {
                 sourcePath = "${productFlavorName}/${buildTypeName}"
             }
             def testTaskName = "test${sourceName.capitalize()}UnitTest"
+
+            // Create coverage task of form 'testFlavorTypeCoverage2' depending on 'testFlavorTypeUnitTest'
+            task "${testTaskName}Coverage2" (dependsOn: "$testTaskName") << {
+              ant.taskdef(name: 'jacocoReport',
+                classname: 'org.jacoco.ant.ReportTask',
+                classpath: configurations.jacocoAntTasks.asPath)
+              ant.jacocoReport() {
+                executionData() {
+                  fileset(file: "${project.buildDir}/jacoco/${testTaskName}.exec")
+                }
+                html([destdir: "${project.buildDir}/reports/jacoco/${testTaskName}Coverage2"]) {
+                }
+                structure([name: 'project']) {
+                  classfiles() {
+                    fileset(dir: "${project.buildDir}/intermediates/classes/${sourcePath}")
+                  }
+                  sourcefiles() {
+                    fileset(dir: "src/main/kotlin")
+                  }
+                }
+              }
+            }
+
             // Create coverage task of form 'testFlavorTypeCoverage' depending on 'testFlavorTypeUnitTest'
             task "${testTaskName}Coverage" (type:JacocoReport, dependsOn: "$testTaskName") {
                 group = "Reporting"
@@ -55,6 +78,7 @@ project.afterEvaluate {
                                 '**/Manifest*.*'
                         ]
                 )
+                println(classDirectories.getFiles())
                 def coverageSourceDirs = [
                         "src/main/kotlin",
                         "src/$productFlavorName/kotlin",
